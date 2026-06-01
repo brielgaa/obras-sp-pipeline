@@ -1,0 +1,10 @@
+pandas==2.2.2
+streamlit==1.35.0
+openpyxl
+rapidfuzz
+geopandas
+shapely
+pyproj
+pyogrio
+requests
+pydeck

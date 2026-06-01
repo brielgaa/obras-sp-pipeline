@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Tooling / editor
+.vscode/
+.idea/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Project data and generated outputs
+data/raw/
+data/processed/
+data/cache/
+
+# Local notebooks and exports
+.ipynb_checkpoints/
+*.ipynb

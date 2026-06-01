@@ -93,6 +93,7 @@ def normalizar_rua(nome: str) -> str:
     if not isinstance(nome, str):
         return ''
     nome = corrigir_texto(nome)
+    nome = re.split(r'\s+-\s+|,\s+|/\s*|\s+\(', nome, maxsplit=1)[0]
     nome = nome.upper().strip()
     nome = unicodedata.normalize('NFKD', nome).encode('ascii', 'ignore').decode('ascii')
     nome = re.sub(r'[^\w\s]', ' ', nome)   # remove pontuação
@@ -322,6 +323,18 @@ def _unir_linhas_locais(geoms, referencia=None, raio_m=2500, limite_sem_raio=40)
     return _unir_linhas(linhas)
 
 
+def _unir_linhas_principais(geoms, referencia=None, raio_m=2500, limite_sem_raio=40, fator_minimo=0.65):
+    local = _unir_linhas_locais(geoms, referencia=referencia, raio_m=raio_m, limite_sem_raio=limite_sem_raio)
+    total = _unir_linhas(geoms)
+    if local is None:
+        return total
+    if total is None:
+        return local
+    if local.length < total.length * fator_minimo:
+        return total
+    return local
+
+
 def _linha_mais_representativa(geom, referencia=None):
     linhas = _componentes_linha(geom)
     if not linhas:
@@ -475,7 +488,7 @@ def enriquecer_recape_com_geosampa(df_recape: pd.DataFrame) -> pd.DataFrame:
         if pd.notna(row.get('longitude')) and pd.notna(row.get('latitude')):
             referencia = shp_transform(to_utm, Point(float(row['longitude']), float(row['latitude'])))
 
-        via_geom = _unir_linhas_locais(via_linhas, referencia)
+        via_geom = _unir_linhas_principais(via_linhas, referencia, raio_m=5000, limite_sem_raio=80, fator_minimo=0.5)
         de_geom = _unir_linhas_locais(de_linhas, referencia)
         ate_geom = _unir_linhas_locais(ate_linhas, referencia)
         if via_geom is None or de_geom is None or ate_geom is None:
@@ -507,6 +520,10 @@ def enriquecer_recape_com_geosampa(df_recape: pd.DataFrame) -> pd.DataFrame:
             paths.append(None)
             status_paths.append('SEM_TRECHO')
             continue
+        if via_geom is not None and trecho.length < max(120, via_geom.length * 0.25):
+            trecho_amplo = _linha_mais_representativa(via_geom, referencia)
+            if trecho_amplo is not None and not trecho_amplo.is_empty and trecho_amplo.length >= trecho.length:
+                trecho = trecho_amplo
         status_path = 'OK' if p_ini is not None and p_fim is not None else 'FALLBACK_VIA'
 
         trecho_ll = shp_transform(to_ll, trecho)
